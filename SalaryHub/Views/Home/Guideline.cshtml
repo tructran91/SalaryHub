@@ -1,0 +1,62 @@
+﻿@{
+    ViewData["Title"] = "Hướng dẫn sử dụng";
+}
+<h1>@ViewData["Title"]</h1>
+
+<div class="container-fluid py-4">
+    <div class="card shadow-sm border-0">
+        <div class="card-header d-flex align-items-center justify-content-between py-3"
+             style="background: linear-gradient(135deg, #1a3c5e 0%, #2e6da4 100%); border-radius: 8px 8px 0 0;">
+            <h5 class="mb-0 text-white fw-semibold">
+                <i class="bi bi-table me-2"></i>Tiêu đề của file Excel - Các cột có dấu (*) là bắt buộc
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered mb-0 align-middle text-center"
+                       style="font-size: 0.875rem;">
+                    <thead>
+                        <tr style="background-color: #eaf1fb; color: #1a3c5e;">
+                            <th scope="col" class="fw-semibold py-3 text-danger">STT - TT (*)</th>
+                            <th scope="col" class="fw-semibold py-3 text-danger">Mã NV (*)</th>
+                            <th scope="col" class="fw-semibold py-3 text-start text-danger">Họ Tên - họ và tên (*)</th>
+                            <th scope="col" class="fw-semibold py-3">Phòng - phòng ban - phòng/ban</th>
+                            <th scope="col" class="fw-semibold py-3 text-danger">Tổng Thu Nhập Chịu Thuế (*)</th>
+                            <th scope="col" class="fw-semibold py-3">Trích Thuế TNCN</th>
+                            <th scope="col" class="fw-semibold py-3">Trích BHXH</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="text-muted">1</td>
+                            <td>NV001</td>
+                            <td class="text-start fw-medium">Nguyễn Văn A</td>
+                            <td>Kế Toán</td>
+                            <td class="text-end pe-3">15,000,000</td>
+                            <td class="text-end pe-3">750,000</td>
+                            <td class="text-end pe-3">1,050,000</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">2</td>
+                            <td>NV002</td>
+                            <td class="text-start fw-medium">Trần Thị B</td>
+                            <td>Nhân Sự</td>
+                            <td class="text-end pe-3">18,500,000</td>
+                            <td class="text-end pe-3">1,110,000</td>
+                            <td class="text-end pe-3">1,295,000</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">3</td>
+                            <td>NV003</td>
+                            <td class="text-start fw-medium">Lê Minh C</td>
+                            <td>IT</td>
+                            <td class="text-end pe-3">22,000,000</td>
+                            <td class="text-end pe-3">1,650,000</td>
+                            <td class="text-end pe-3">1,540,000</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

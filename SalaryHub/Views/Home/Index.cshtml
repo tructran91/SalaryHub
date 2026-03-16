@@ -1,0 +1,181 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="container mt-4">
+    <h4 class="mb-3">Import bảng thu nhập từ Excel</h4>
+    <div class="card p-3">
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <label class="form-label">Month</label>
+                <select id="month" class="form-select">
+                    <option value="">-- Chọn tháng --</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Year</label>
+                <select id="year" class="form-select">
+                    <option value="">-- Chọn năm --</option>
+                    <option>2026</option>
+                    <option>2027</option>
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Chọn file Excel</label>
+                <input type="file"
+                       class="form-control"
+                       id="excelFiles"
+                       accept=".xlsx,.xls"
+                       multiple>
+            </div>
+        </div>
+
+        <button id="submitBtn" class="btn btn-primary" disabled>
+            Upload
+        </button>
+
+        <div id="uploadStatus" class="mt-3 text-muted"></div>
+    </div>
+
+    <div id="warningArea" class="mt-4" style="display:none">
+        <h5 class="text-warning">Danh sách cảnh báo</h5>
+
+        <table class="table table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>File</th>
+                    <th>Cảnh báo</th>
+                </tr>
+            </thead>
+            <tbody id="warningTable"></tbody>
+        </table>
+    </div>
+
+    <div id="errorArea" class="mt-4" style="display:none">
+        <h5 class="text-danger">Danh sách lỗi</h5>
+
+        <table class="table table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>File</th>
+                    <th>Lỗi</th>
+                </tr>
+            </thead>
+            <tbody id="errorTable"></tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            const $month = $("#month");
+            const $year = $("#year");
+            const $submitBtn = $("#submitBtn");
+            const $excelFiles = $("#excelFiles");
+            const $uploadStatus = $("#uploadStatus");
+            const $warningArea = $("#warningArea");
+            const $warningTable = $("#warningTable");
+            const $errorArea = $("#errorArea");
+            const $errorTable = $("#errorTable");
+
+            // Enable/disable submit button based on form validation
+            $month.add($year).on("change", function () {
+                if ($month.val() && $year.val()) {
+                    $submitBtn.prop("disabled", false);
+                } else {
+                    $submitBtn.prop("disabled", true);
+                }
+            });
+
+            // Upload files
+            $submitBtn.on("click", async function () {
+                const files = $excelFiles[0].files;
+
+                if (files.length === 0) {
+                    alert("Vui lòng chọn file Excel");
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append("month", $month.val());
+                formData.append("year", $year.val());
+
+                $.each(files, function (i, file) {
+                    formData.append("files", file);
+                });
+
+                $uploadStatus.text("Đang xử lý...");
+
+                try {
+                    const response = await fetch("/home/upload", {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    $uploadStatus.text("");
+
+                    if (!result.success) {
+                        showErrors(result.errors);
+                    } else {
+                        if (result.warnings && result.warnings.length > 0) {
+                            showWarnings(result.warnings);
+                        }
+                        alert("Import thành công " + result.totalInserted + " dòng dữ liệu");
+                    }
+                } catch (error) {
+                    console.error("Error during upload:", error);
+                    $uploadStatus.text("Đã xảy ra lỗi trong quá trình upload.");
+                }
+            });
+
+            // Display warnings in the warning table
+            function showWarnings(warnings) {
+                $warningTable.empty();
+
+                $.each(warnings, function (i, w) {
+                    const row = `
+                    <tr>
+                        <td>${w.file}</td>
+                        <td>${w.message}</td>
+                    </tr>`;
+                    $warningTable.append(row);
+                });
+
+                $warningArea.show();
+            }
+
+            // Display errors in the error table
+            function showErrors(errors) {
+                $errorTable.empty();
+
+                $.each(errors, function (i, e) {
+                    const row = `
+                    <tr>
+                        <td>${e.file}</td>
+                        <td>${e.message}</td>
+                    </tr>`;
+                    $errorTable.append(row);
+                });
+
+                $errorArea.show();
+            }
+        });
+    </script>
+}
