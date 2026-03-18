@@ -1,5 +1,5 @@
 ﻿@model SalaryReportViewModel
-@if (Model == null || !Model.Rows.Any())
+@if (Model == null || !Model.Rows.Any() || Model.Rows.FirstOrDefault().FullName == "TOTAL")
 {
     <div class="alert alert-success" role="alert">
         Không có dữ liệu
