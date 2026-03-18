@@ -19,6 +19,11 @@ namespace SalaryHub.Controllers
             return View();
         }
 
+        public IActionResult Preview()
+        {
+            return View();
+        }
+
         public IActionResult Guideline()
         {
             return View();
@@ -95,6 +100,14 @@ namespace SalaryHub.Controllers
                 totalInserted,
                 warnings
             });
+        }
+
+        [HttpGet]
+        public IActionResult GetReport(int month, int year)
+        {
+            var data = _excelService.GetMonthlySalaryReport(month, year);
+
+            return PartialView("_PayrollReportRows", data);
         }
 
         public IActionResult Privacy()

@@ -1,0 +1,72 @@
+﻿@{
+    ViewData["Title"] = "Xem lại tổng hợp thu nhập";
+}
+
+<div class="container mt-4">
+    <h4 class="mb-3">@ViewData["Title"]</h4>
+    <div class="card p-3">
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <select id="month" class="form-select">
+                    <option value="">-- Chọn tháng --</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <select id="year" class="form-select">
+                    <option value="">-- Chọn năm --</option>
+                    <option>2026</option>
+                    <option>2027</option>
+                </select>
+            </div>
+
+            <div class="col-md-6 d-grid gap-2">
+                <button class="btn btn-primary">Xem báo cáo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Khu vực hiển thị table data -->
+    <div id="reportResult" class="mt-4" style="display: none;">
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $('.btn-primary').on('click', function () {
+            const month = $('#month').val();
+            const year = $('#year').val();
+
+            if (!month || !year) {
+                alert('Vui lòng chọn tháng và năm!');
+                return;
+            }
+
+            const btn = $(this);
+            btn.prop('disabled', true).text('Đang tải...');
+
+            $.get('/Home/GetReport', { month, year })
+                .done(function (html) {
+                    $('#reportResult').show().html(html);
+                })
+                .fail(function () {
+                    alert('Có lỗi xảy ra!');
+                })
+                .always(function () {
+                    btn.prop('disabled', false).text('Xem báo cáo');
+                });
+        });
+    </script>
+}

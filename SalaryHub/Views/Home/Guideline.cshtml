@@ -1,14 +1,14 @@
 ﻿@{
     ViewData["Title"] = "Hướng dẫn sử dụng";
 }
-<h1>@ViewData["Title"]</h1>
+<h2>@ViewData["Title"]</h2>
 
 <div class="container-fluid py-4">
     <div class="card shadow-sm border-0">
         <div class="card-header d-flex align-items-center justify-content-between py-3"
              style="background: linear-gradient(135deg, #1a3c5e 0%, #2e6da4 100%); border-radius: 8px 8px 0 0;">
             <h5 class="mb-0 text-white fw-semibold">
-                <i class="bi bi-table me-2"></i>Tiêu đề của file Excel - Các cột có dấu (*) là bắt buộc
+                <i class="bi bi-table me-2"></i>Tiêu đề của file Excel - Header các cột có dấu (*) là bắt buộc, không phân biệt chữ Hoa, thường
             </h5>
         </div>
         <div class="card-body p-0">
@@ -18,7 +18,7 @@
                     <thead>
                         <tr style="background-color: #eaf1fb; color: #1a3c5e;">
                             <th scope="col" class="fw-semibold py-3 text-danger">STT - TT (*)</th>
-                            <th scope="col" class="fw-semibold py-3 text-danger">Mã NV (*)</th>
+                            <th scope="col" class="fw-semibold py-3 text-danger">Mã NV - MNV (*)</th>
                             <th scope="col" class="fw-semibold py-3 text-start text-danger">Họ Tên - họ và tên (*)</th>
                             <th scope="col" class="fw-semibold py-3">Phòng - phòng ban - phòng/ban</th>
                             <th scope="col" class="fw-semibold py-3 text-danger">Tổng Thu Nhập Chịu Thuế (*)</th>
@@ -56,6 +56,55 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Danh sách lỗi thường gặp -->
+<div class="container-fluid py-4">
+    <div class="card shadow-sm border-0">
+        <div class="card-header py-3"
+             style="background: linear-gradient(135deg, #5e1a1a 0%, #a42e2e 100%); border-radius: 8px 8px 0 0;">
+            <h5 class="mb-0 text-white fw-semibold">
+                <i class="bi bi-exclamation-triangle me-2"></i>Danh Sách Lỗi Thường Gặp
+            </h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+
+                <!-- Lỗi 1 -->
+                <div class="col-12 col-md-6">
+                    <div class="card h-100 border shadow-sm" style="border-color: #f0c0c0 !important; border-radius: 10px; overflow: hidden;">
+                        <img src="~/img/error-system.png"
+                             class="card-img-top" alt="Lỗi 1"
+                             style="height: 220px; object-fit: cover;">
+                        <div class="card-body">
+                            <span class="badge mb-2" style="background-color: #fee2e2; color: #b91c1c; font-size: 0.75rem;">Lỗi #001</span>
+                            <h6 class="fw-semibold mb-2" style="color: #1a3c5e;">Lỗi hệ thống</h6>
+                            <p class="text-muted mb-0" style="font-size: 0.85rem; line-height: 1.6;">
+                                Nếu gặp lỗi này, dừng ngay các thao tác và ghi nhớ thời gian để có thể truy vết lại dữ liệu
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lỗi 2 -->
+                <div class="col-12 col-md-6">
+                    <div class="card h-100 border shadow-sm" style="border-color: #f0c0c0 !important; border-radius: 10px; overflow: hidden;">
+                        <img src="~/img/error-column.png"
+                             class="card-img-top" alt="Lỗi 2"
+                             style="height: 220px; object-fit: cover;">
+                        <div class="card-body">
+                            <span class="badge mb-2" style="background-color: #fee2e2; color: #b91c1c; font-size: 0.75rem;">Lỗi #002</span>
+                            <h6 class="fw-semibold mb-2" style="color: #1a3c5e;">File không có cột mã nhân viên</h6>
+                            <p class="text-muted mb-0" style="font-size: 0.85rem; line-height: 1.6;">
+                                Kiểm tra lại file bị lỗi xem có cột mã nhân viên hay không. Các cột được chấp nhận đã liệt kê ở trên. Sửa lại file rồi upload lên lại
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>

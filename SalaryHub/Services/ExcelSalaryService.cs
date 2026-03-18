@@ -1,4 +1,6 @@
 ﻿using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Bibliography;
+using Microsoft.EntityFrameworkCore;
 using SalaryHub.Data;
 using SalaryHub.Entities;
 using SalaryHub.Models;
@@ -142,16 +144,32 @@ namespace SalaryHub.Services
 
                     if (!existingUsers.TryGetValue(empCode, out var user))
                     {
-                        user = new User
+                        if (empCode.Length == 3)
                         {
-                            EmployeeCode = empCode,
-                            FullName = name,
-                            Department = department,
-                            CreatedDate = DateTime.UtcNow
-                        };
+                            string empCodeWithZero = "0" + empCode;
+                            existingUsers.TryGetValue(empCodeWithZero, out user);
+                        }
 
-                        _context.Users.Add(user);
-                        existingUsers.Add(empCode, user);
+                        if (user == null && empCode.Length > 4 && empCode[0] == '0')
+                        {
+                            string empCodeWithoutZero = empCode.Substring(1);
+                            existingUsers.TryGetValue(empCodeWithoutZero, out user);
+                            empCode = empCodeWithoutZero;
+                        }
+
+                        if (user == null)
+                        {
+                            user = new User
+                            {
+                                EmployeeCode = empCode,
+                                FullName = name,
+                                Department = department,
+                                CreatedDate = DateTime.UtcNow
+                            };
+
+                            _context.Users.Add(user);
+                            existingUsers.Add(empCode, user);
+                        }
                     }
 
                     salaryList.Add(new SalaryRecord
@@ -227,14 +245,70 @@ namespace SalaryHub.Services
             }
         }
 
+        public SalaryReportViewModel GetMonthlySalaryReport(int month, int year)
+        {
+            try
+            {
+                var records = _context.SalaryRecords
+                    .Where(x => x.Month == month && x.Year == year)
+                    .Include(x => x.User)
+                    .ToList();
+
+                var incomeTitles = records
+                    .Select(x => x.Title)
+                    .Distinct()
+                    .ToList();
+
+                var rows = records
+                    .GroupBy(x => x.User)
+                    .Select(g => new UserSalaryRow
+                    {
+                        EmployeeCode = g.Key.EmployeeCode,
+                        FullName = g.Key.FullName,
+                        Department = g.Key.Department,
+
+                        Incomes = g.ToDictionary(
+                            x => x.Title,
+                            x => x.TaxableIncome
+                        ),
+
+                        Pits = g.ToDictionary(
+                            x => x.Title,
+                            x => x.Pit ?? 0
+                        ),
+
+                        Bhxh = g.FirstOrDefault()?.Bhxh ?? 0
+                    })
+                    .ToList();
+
+                var vm = new SalaryReportViewModel
+                {
+                    IncomeTitles = incomeTitles,
+                    PitTitles = incomeTitles,
+                    Rows = rows
+                };
+
+                return vm;
+            }
+            catch (Exception ex)
+            {
+                return new SalaryReportViewModel();
+            }
+        }
+
         private int FindHeaderRow(IXLWorksheet ws)
         {
+            var allowList = new HashSet<string> { "mã nv", "mnv" };
+
             foreach (var row in ws.RowsUsed())
             {
                 foreach (var cell in row.CellsUsed())
                 {
-                    if (cell.GetString().ToLower().Trim() == "mã nv")
+                    var value = cell.GetString().Trim().ToLower();
+                    if (allowList.Contains(value))
+                    {
                         return row.RowNumber();
+                    }
                 }
             }
 
@@ -258,6 +332,7 @@ namespace SalaryHub.Services
                         map.No = cell.Address.ColumnNumber;
                         break;
 
+                    case "mnv":
                     case "mã nv":
                         map.EmpCode = cell.Address.ColumnNumber;
                         break;

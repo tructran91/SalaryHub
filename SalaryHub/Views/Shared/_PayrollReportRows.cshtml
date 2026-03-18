@@ -1,0 +1,68 @@
+﻿@model SalaryReportViewModel
+@if (Model == null || !Model.Rows.Any())
+{
+    <div class="alert alert-success" role="alert">
+        Không có dữ liệu
+    </div>
+}
+else
+{
+    <div style="overflow-x: auto; width: 100%;">
+        <table class="table table-bordered table-striped table-hover table-sm text-center mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th rowspan="2" class="table-warning align-middle">STT</th>
+                    <th rowspan="2" class="table-warning align-middle">Mã NV</th>
+                    <th rowspan="2" class="table-warning align-middle">Họ và tên</th>
+                    <th rowspan="2" class="table-warning align-middle">Phòng ban</th>
+                    <th colspan="@(Model.IncomeTitles.Count + 1)" class="table-success">THU NHẬP</th>
+                    <th colspan="@Model.PitTitles.Count" class="table-success">THUẾ TNCN</th>
+                    <th rowspan="2" class="table-info">BHXH</th>
+                    <th rowspan="2" class="table-warning align-middle">Thuế tạm trích</th>
+                    <th rowspan="2" class="table-warning align-middle">Thuế phải nộp</th>
+                </tr>
+                <tr>
+                    @foreach (var title in Model.IncomeTitles)
+                    {
+                        <th class="table-info">@title</th>
+                    }
+                    <th class="table-info">Tổng thu nhập</th>
+                    @foreach (var title in Model.PitTitles)
+                    {
+                        <th class="table-info">@title</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.Rows.Count; i++)
+                {
+                    var row = Model.Rows[i];
+                    decimal totalIncome = 0;
+                    decimal totalPit = 0;
+                    <tr>
+                        <td>@(i + 1)</td>
+                        <td>@row.EmployeeCode</td>
+                        <td>@row.FullName</td>
+                        <td>@row.Department</td>
+                        @foreach (var title in Model.IncomeTitles)
+                        {
+                            decimal value = row.Incomes.ContainsKey(title) ? row.Incomes[title] : 0;
+                            totalIncome += value;
+                            <td>@value.ToString("N0")</td>
+                        }
+                        <td class="fw-semibold">@totalIncome.ToString("N0")</td>
+                        @foreach (var title in Model.PitTitles)
+                        {
+                            decimal value = row.Pits.ContainsKey(title) ? row.Pits[title] : 0;
+                            totalPit += value;
+                            <td>@value.ToString("N0")</td>
+                        }
+                        <td>@row.Bhxh.ToString("N0")</td>
+                        <td>@totalPit.ToString("N0")</td>
+                        <td>@totalPit.ToString("N0")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

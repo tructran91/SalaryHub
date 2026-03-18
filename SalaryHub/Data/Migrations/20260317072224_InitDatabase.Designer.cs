@@ -12,7 +12,7 @@ using SalaryHub.Data;
 namespace SalaryHub.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260316075402_InitDatabase")]
+    [Migration("20260317072224_InitDatabase")]
     partial class InitDatabase
     {
         /// <inheritdoc />
