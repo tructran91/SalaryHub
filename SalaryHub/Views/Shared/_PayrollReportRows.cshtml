@@ -39,7 +39,8 @@ else
                     var row = Model.Rows[i];
                     decimal totalIncome = 0;
                     decimal totalPit = 0;
-                    <tr>
+                    bool isTotal = row.FullName == "TOTAL";
+                    <tr class="@(isTotal ? "fw-bold table-warning" : "")">
                         <td>@(i + 1)</td>
                         <td>@row.EmployeeCode</td>
                         <td>@row.FullName</td>

@@ -103,9 +103,9 @@ namespace SalaryHub.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetReport(int month, int year)
+        public async Task<IActionResult> GetReport(int month, int year)
         {
-            var data = _excelService.GetMonthlySalaryReport(month, year);
+            var data = await _excelService.GetMonthlySalaryReport(month, year);
 
             return PartialView("_PayrollReportRows", data);
         }

@@ -75,6 +75,11 @@ namespace SalaryHub.Services
             var existingUsers = _context.Users
                 .ToDictionary(x => x.EmployeeCode, x => x);
 
+            var existingRecords = _context.SalaryRecords
+                .Where(s => s.Month == month && s.Year == year)
+                .Include(s => s.User)
+                .ToDictionary(s => $"{s.User.EmployeeCode}|{s.Title}", s => s);
+
             using var transaction = _context.Database.BeginTransaction();
 
             try
@@ -129,7 +134,7 @@ namespace SalaryHub.Services
 
                     if (empCheck.Contains(empCode))
                     {
-                        var existingSalary = salaryList.First(s => s.User.EmployeeCode == empCode);
+                        var existingSalary = salaryList.First(s => s.User.EmployeeCode == empCode && s.Title == title);
                         existingSalary.TaxableIncome += taxableIncome;
                         existingSalary.Pit = (existingSalary.Pit ?? 0) + (pit ?? 0);
                         existingSalary.Bhxh = (existingSalary.Bhxh ?? 0) + (bhxh ?? 0);
@@ -172,29 +177,34 @@ namespace SalaryHub.Services
                         }
                     }
 
-                    salaryList.Add(new SalaryRecord
+                    string recordKey = $"{user.EmployeeCode}|{title}";
+
+                    if (existingRecords.TryGetValue(recordKey, out var existingRecord))
                     {
-                        User = user,
-                        Month = month,
-                        Year = year,
-                        Title = title,
-                        TaxableIncome = taxableIncome,
-                        Pit = pit,
-                        Bhxh = bhxh,
-                        CreatedDate = DateTime.UtcNow
-                    });
+                        existingRecord.TaxableIncome += taxableIncome;
+                        existingRecord.Pit = (existingRecord.Pit ?? 0) + (pit ?? 0);
+                        existingRecord.Bhxh = (existingRecord.Bhxh ?? 0) + (bhxh ?? 0);
+                    }
+                    else
+                    {
+                        var newRecord = new SalaryRecord
+                        {
+                            User = user,
+                            Month = month,
+                            Year = year,
+                            Title = title,
+                            TaxableIncome = taxableIncome,
+                            Pit = pit,
+                            Bhxh = bhxh,
+                            CreatedDate = DateTime.UtcNow
+                        };
+
+                        salaryList.Add(newRecord);
+                        existingRecords.Add(recordKey, newRecord);
+                    }
 
                     row++;
                 }
-
-                //var existingRecords = _context.SalaryRecords
-                //    .Where(s => s.Month == month && s.Year == year && s.Title == title)
-                //    .ToList();
-
-                //if (existingRecords.Any())
-                //{
-                //    _context.SalaryRecords.RemoveRange(existingRecords);
-                //}
 
                 _context.SalaryRecords.AddRange(salaryList);
                 _context.SaveChanges();
@@ -245,14 +255,14 @@ namespace SalaryHub.Services
             }
         }
 
-        public SalaryReportViewModel GetMonthlySalaryReport(int month, int year)
+        public async Task<SalaryReportViewModel> GetMonthlySalaryReport(int month, int year)
         {
             try
             {
-                var records = _context.SalaryRecords
+                var records = await _context.SalaryRecords
                     .Where(x => x.Month == month && x.Year == year)
                     .Include(x => x.User)
-                    .ToList();
+                    .ToListAsync();
 
                 var incomeTitles = records
                     .Select(x => x.Title)
@@ -277,9 +287,35 @@ namespace SalaryHub.Services
                             x => x.Pit ?? 0
                         ),
 
-                        Bhxh = g.FirstOrDefault()?.Bhxh ?? 0
+                        Bhxh = g.Sum(x => x.Bhxh ?? 0)
                     })
+                    .OrderBy(x => x.Department)
                     .ToList();
+
+                var totalRow = new UserSalaryRow
+                {
+                    EmployeeCode = "",
+                    FullName = "TOTAL",
+                    Department = "",
+
+                    Incomes = records
+                        .GroupBy(x => x.Title)
+                        .ToDictionary(
+                            g => g.Key,
+                            g => g.Sum(x => x.TaxableIncome)
+                        ),
+
+                    Pits = records
+                        .GroupBy(x => x.Title)
+                        .ToDictionary(
+                            g => g.Key,
+                            g => g.Sum(x => x.Pit ?? 0)
+                        ),
+
+                    Bhxh = records.Sum(x => x.Bhxh ?? 0)
+                };
+
+                rows.Add(totalRow);
 
                 var vm = new SalaryReportViewModel
                 {
@@ -292,6 +328,21 @@ namespace SalaryHub.Services
             }
             catch (Exception ex)
             {
+                using var logTransaction = _context.Database.BeginTransaction();
+
+                var systemLog = new SystemLog
+                {
+                    ErrorMessage = ex.Message,
+                    ErrorInnerMessage = ex.InnerException?.Message,
+                    StackTrace = ex.StackTrace,
+                    CreatedDate = DateTime.UtcNow
+                };
+
+                _context.SystemLogs.Add(systemLog);
+                _context.SaveChanges();
+
+                logTransaction.Commit();
+
                 return new SalaryReportViewModel();
             }
         }
