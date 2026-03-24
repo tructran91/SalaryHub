@@ -1,5 +1,4 @@
 ﻿using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Bibliography;
 using Microsoft.EntityFrameworkCore;
 using SalaryHub.Data;
 using SalaryHub.Entities;
@@ -16,7 +15,7 @@ namespace SalaryHub.Services
             _context = context;
         }
 
-        public ImportResult Import(Stream fileStream, int month, int year)
+        public ImportResult Import(Stream fileStream, int month, int year, bool isMonthlyReport = false)
         {
             var result = new ImportResult();
 
@@ -196,6 +195,7 @@ namespace SalaryHub.Services
                             TaxableIncome = taxableIncome,
                             Pit = pit,
                             Bhxh = bhxh,
+                            IsMonthlyReport = isMonthlyReport,
                             CreatedDate = DateTime.UtcNow
                         };
 
@@ -263,6 +263,15 @@ namespace SalaryHub.Services
                     .Where(x => x.Month == month && x.Year == year)
                     .Include(x => x.User)
                     .ToListAsync();
+
+                // Format title: nếu IsMonthlyReport = true thì thêm "MM/YYYY"
+                foreach (var record in records)
+                {
+                    if (record.IsMonthlyReport)
+                    {
+                        record.Title = $"{record.Title} {record.Month:D2}/{record.Year}";
+                    }
+                }
 
                 var incomeTitles = records
                     .Select(x => x.Title)

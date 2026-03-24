@@ -56,6 +56,7 @@ namespace SalaryHub.Data.Migrations
                     TaxableIncome = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Pit = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
                     Bhxh = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    IsMonthlyReport = table.Column<bool>(type: "bit", nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>

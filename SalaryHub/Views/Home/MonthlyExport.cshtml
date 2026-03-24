@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Xem lại tổng hợp thu nhập";
+    ViewData["Title"] = "Báo Cáo Tháng";
 }
 
 <div class="container mt-4">
@@ -33,11 +33,11 @@
             </div>
 
             <div class="col-md-3 d-grid gap-2">
-                <button class="btn btn-primary">Xem báo cáo</button>
+                <button id="viewReportBtn" class="btn btn-primary">Xem báo cáo</button>
             </div>
 
             <div class="col-md-3 d-grid gap-2">
-                <button class="btn btn-success">Xuất file Excel</button>
+                <button id="exportExcelBtn" class="btn btn-success">Xuất file Excel</button>
             </div>
         </div>
     </div>
@@ -49,7 +49,7 @@
 
 @section Scripts {
     <script>
-        $('.btn-primary').on('click', function () {
+        $('#viewReportBtn').on('click', function () {
             const month = $('#month').val();
             const year = $('#year').val();
 
@@ -71,6 +71,18 @@
                 .always(function () {
                     btn.prop('disabled', false).text('Xem báo cáo');
                 });
+        });
+
+        $('#exportExcelBtn').on('click', function () {
+            const month = $('#month').val();
+            const year = $('#year').val();
+
+            if (!month || !year) {
+                alert('Vui lòng chọn tháng và năm!');
+                return;
+            }
+
+            window.location.href = `/Home/ExportExcel?month=${month}&year=${year}`;
         });
     </script>
 }

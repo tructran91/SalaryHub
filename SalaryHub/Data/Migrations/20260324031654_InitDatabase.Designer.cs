@@ -12,7 +12,7 @@ using SalaryHub.Data;
 namespace SalaryHub.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260317072224_InitDatabase")]
+    [Migration("20260324031654_InitDatabase")]
     partial class InitDatabase
     {
         /// <inheritdoc />
@@ -20,7 +20,7 @@ namespace SalaryHub.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.3")
+                .HasAnnotation("ProductVersion", "9.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -38,6 +38,9 @@ namespace SalaryHub.Data.Migrations
 
                     b.Property<DateTime?>("CreatedDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsMonthlyReport")
+                        .HasColumnType("bit");
 
                     b.Property<int>("Month")
                         .HasColumnType("int");

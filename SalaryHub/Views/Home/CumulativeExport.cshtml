@@ -1,0 +1,237 @@
+﻿@{
+    ViewData["Title"] = "Báo Cáo Lũy Kế";
+}
+
+<div class="container mt-4">
+    <h4 class="mb-3">@ViewData["Title"]</h4>
+    
+    <div>
+        <div class="card border shadow-sm mb-3">
+            <div class="card-body">
+
+                <!-- Label tháng + quick select -->
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                    <span class="fw-semibold small text-muted text-uppercase">
+                        <i class="bi bi-calendar3 me-1"></i>Chọn tháng
+                    </span>
+                    <div class="d-flex gap-1 flex-wrap">
+                        <button class="btn btn-outline-secondary btn-sm" id="btnSelectAll">Chọn tất cả</button>
+                        <button class="btn btn-outline-secondary btn-sm" id="btnClearAll">Bỏ chọn</button>
+                        <button class="btn btn-outline-primary btn-sm" id="btnQ1">Quý I</button>
+                        <button class="btn btn-outline-primary btn-sm" id="btnQ2">Quý II</button>
+                        <button class="btn btn-outline-primary btn-sm" id="btnQ3">Quý III</button>
+                        <button class="btn btn-outline-primary btn-sm" id="btnQ4">Quý IV</button>
+                    </div>
+                </div>
+
+                <!-- 12 checkbox tháng -->
+                <div class="row row-cols-3 row-cols-sm-4 row-cols-md-6 g-2 mb-3">
+                    <div class="col" id="monthCheckboxes"><!-- generated below --></div>
+                </div>
+
+                <hr class="my-3" />
+
+                <!-- Năm + Buttons -->
+                <div class="d-flex align-items-end gap-3 flex-wrap">
+                    <div>
+                        <label class="form-label fw-semibold small text-muted text-uppercase mb-1">
+                            <i class="bi bi-calendar-event me-1"></i>Năm
+                        </label>
+                        <select class="form-select form-select-sm" id="selectYear" style="width:110px">
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                        </select>
+                    </div>
+
+                    <div class="vr d-none d-sm-block"></div>
+
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary" id="btnView">
+                            <i class="bi bi-search me-1"></i>Xem báo cáo
+                        </button>
+                        <button class="btn btn-success" id="btnExcel">
+                            <i class="bi bi-file-earmark-excel-fill me-1"></i>Xuất Excel
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ── Kết quả ── -->
+        <div id="resultSection" class="d-none fade-up">
+            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                <h6 class="fw-bold text-primary mb-0">
+                    <i class="bi bi-table me-2"></i>Kết quả: <span id="resultTitle" class="fw-normal text-dark"></span>
+                </h6>
+                <span class="small text-muted" id="resultMeta"></span>
+            </div>
+
+            <div class="card border shadow-sm mb-4">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover table-sm align-middle mb-0" id="reportTable">
+                        <thead class="table-primary text-uppercase small">
+                            <tr>
+                                <th>#</th>
+                                <th>Khoản mục</th>
+                                <th class="text-end">Doanh thu</th>
+                                <th class="text-end">Chi phí</th>
+                                <th class="text-end">Lợi nhuận</th>
+                                <th class="text-end">%</th>
+                                <th class="text-end">Lũy kế</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty state -->
+        <div id="emptySection" class="d-none">
+            <div class="card border shadow-sm text-center py-5 text-muted mb-4">
+                <i class="bi bi-funnel fs-1 opacity-25 d-block mb-2"></i>
+                <p class="mb-0 small">Vui lòng chọn ít nhất một tháng và nhấn <strong>Xem báo cáo</strong>.</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+<script>
+        // ── Render 12 checkbox ────────────────────────────────────────
+            const monthNames = ['','Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6',
+                                'Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+
+            let chips = '';
+            for (let i = 1; i <= 12; i++) {
+              chips += `
+                <div class="col month-chip">
+                  <input type="checkbox" id="m${i}" value="${i}">
+                  <label for="m${i}" class="w-100 text-center border rounded py-2 small fw-medium text-secondary bg-white">
+                    ${monthNames[i]}
+                  </label>
+                </div>`;
+            }
+            $('#monthCheckboxes').replaceWith(chips);
+
+            // ── Quick select ──────────────────────────────────────────────
+            $('#btnSelectAll').on('click', () => $('input[type=checkbox]').prop('checked', true));
+            $('#btnClearAll').on('click',  () => $('input[type=checkbox]').prop('checked', false));
+            $('#btnQ1').on('click', () => checkMonths([1,2,3]));
+            $('#btnQ2').on('click', () => checkMonths([4,5,6]));
+            $('#btnQ3').on('click', () => checkMonths([7,8,9]));
+            $('#btnQ4').on('click', () => checkMonths([10,11,12]));
+
+            function checkMonths(months) {
+              $('input[type=checkbox]').prop('checked', false);
+              months.forEach(m => $(`#m${m}`).prop('checked', true));
+            }
+
+            // ── Helpers ───────────────────────────────────────────────────
+            function fmt(n) { return n.toLocaleString('vi-VN') + ' ₫'; }
+
+            // Dữ liệu giả
+            function fakeRow(cat) {
+              const revenue = Math.round((Math.random() * 800 + 200) * 1_000_000);
+              const cost    = Math.round(revenue * (Math.random() * .3 + .4));
+              const profit  = revenue - cost;
+              const pct     = ((profit / revenue) * 100).toFixed(1);
+              return { cat, revenue, cost, profit, pct };
+            }
+            const CATEGORIES = ['Sản phẩm A','Sản phẩm B','Sản phẩm C','Dịch vụ X','Dịch vụ Y'];
+
+            // ── Xem báo cáo ──────────────────────────────────────────────
+            $('#btnView').on('click', function () {
+              const months = $('input[type=checkbox]:checked').map((_, el) => +el.value).get().sort((a,b)=>a-b);
+              const year   = $('#selectYear').val();
+
+              $('#resultSection, #emptySection').addClass('d-none');
+
+              if (!months.length) { $('#emptySection').removeClass('d-none'); return; }
+
+              // Loading state
+              const $btn = $(this), orig = $btn.html();
+              $btn.html('<span class="spinner-border spinner-border-sm me-1"></span>Đang tải...').prop('disabled', true);
+
+              setTimeout(() => {
+                renderTable(months, year);
+                $btn.html(orig).prop('disabled', false);
+                // Re-trigger animation
+                $('#resultSection').removeClass('d-none fade-up').addClass('d-none');
+                setTimeout(() => $('#resultSection').removeClass('d-none').addClass('fade-up'), 10);
+              }, 600);
+            });
+
+            function renderTable(months, year) {
+              $('#resultTitle').text(`Năm ${year} — ${months.map(m => monthNames[m]).join(', ')}`);
+              $('#resultMeta').text(`${months.length} tháng · ${CATEGORIES.length} khoản mục`);
+
+              let html = '', rowIdx = 1, cumTotal = 0;
+              let grandRev = 0, grandCost = 0, grandProfit = 0;
+
+              months.forEach(m => {
+                let mRev = 0, mCost = 0, mProfit = 0;
+
+                CATEGORIES.forEach(cat => {
+                  const d = fakeRow(cat);
+                  mRev += d.revenue; mCost += d.cost; mProfit += d.profit;
+                  cumTotal += d.profit;
+                  const profitClass = d.profit >= 0 ? 'text-success' : 'text-danger';
+
+                  html += `<tr>
+                    <td class="text-muted small">${rowIdx++}</td>
+                    <td>
+                      <span class="badge bg-primary-subtle text-primary me-1">${monthNames[m]}</span>
+                      ${cat}
+                    </td>
+                    <td class="text-end num">${fmt(d.revenue)}</td>
+                    <td class="text-end num">${fmt(d.cost)}</td>
+                    <td class="text-end num ${profitClass} fw-semibold">${fmt(d.profit)}</td>
+                    <td class="text-end ${profitClass}">${d.pct}%</td>
+                    <td class="text-end num">${fmt(cumTotal)}</td>
+                  </tr>`;
+                });
+
+                grandRev += mRev; grandCost += mCost; grandProfit += mProfit;
+                const mPct = ((mProfit / mRev) * 100).toFixed(1);
+                html += `<tr class="row-subtotal">
+                  <td colspan="2"><i class="bi bi-layers me-1"></i>Tổng ${monthNames[m]}</td>
+                  <td class="text-end num">${fmt(mRev)}</td>
+                  <td class="text-end num">${fmt(mCost)}</td>
+                  <td class="text-end num">${fmt(mProfit)}</td>
+                  <td class="text-end">${mPct}%</td>
+                  <td class="text-end num">${fmt(cumTotal)}</td>
+                </tr>`;
+              });
+
+              const gPct = ((grandProfit / grandRev) * 100).toFixed(1);
+              html += `<tr class="row-total">
+                <td colspan="2"><i class="bi bi-award me-1"></i>TỔNG LŨY KẾ</td>
+                <td class="text-end num">${fmt(grandRev)}</td>
+                <td class="text-end num">${fmt(grandCost)}</td>
+                <td class="text-end num">${fmt(grandProfit)}</td>
+                <td class="text-end">${gPct}%</td>
+                <td class="text-end num">${fmt(cumTotal)}</td>
+              </tr>`;
+
+              $('#reportBody').html(html);
+              $('#resultSection').removeClass('d-none');
+            }
+
+            // ── Xuất Excel (giả) ─────────────────────────────────────────
+            $('#btnExcel').on('click', function () {
+              if (!$('input[type=checkbox]:checked').length) {
+                alert('Vui lòng chọn ít nhất một tháng trước khi xuất.'); return;
+              }
+              const $btn = $(this), orig = $btn.html();
+              $btn.html('<span class="spinner-border spinner-border-sm me-1"></span>Đang xuất...').prop('disabled', true);
+              setTimeout(() => {
+                $btn.html(orig).prop('disabled', false);
+                alert('✅ Xuất file Excel thành công!\n(Kết nối action controller để xuất thật.)');
+              }, 900);
+            });
+</script>    
+}
