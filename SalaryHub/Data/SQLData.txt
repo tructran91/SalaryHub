@@ -1,4 +1,4 @@
-﻿INSERT INTO [User] (EmployeeCode, FullName, Department, CreatedDate)
+﻿INSERT INTO [Users] (EmployeeCode, FullName, Department, CreatedDate)
 VALUES 
 ('3404', N'Nguyễn Thanh Lương', N'Kế toán hành chính', GETDATE()),
 ('3840', N'Nguyễn Thị Ánh Hồng', N'Kế toán hành chính', GETDATE()),
@@ -80,4 +80,6 @@ VALUES
 ('1215', N'Phạm Thị Anh Đào', N'Tổ kinh doanh 3', GETDATE()),
 ('4436', N'Lê Thị Minh Thùy', N'Tổ kinh doanh 3', GETDATE()),
 ('5149', N'Trịnh Thị Diễm Hương', N'Kinh doanh 8', GETDATE()),
-('4655', N'Nguyễn Văn Báu', N'Ban giám đốc', GETDATE());
+('4655', N'Nguyễn Văn Báu', N'Ban giám đốc', GETDATE()
+('1854', N'Nguyễn Thị Phương Thúy', N'Kinh doanh 1', GETDATE()
+('3383', N'Thái Thái Châu', N'Giám định bồi thường', GETDATE());

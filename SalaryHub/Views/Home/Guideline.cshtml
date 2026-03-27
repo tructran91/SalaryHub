@@ -18,7 +18,7 @@
                     <thead>
                         <tr style="background-color: #eaf1fb; color: #1a3c5e;">
                             <th scope="col" class="fw-semibold py-3 text-danger">STT - TT (*)</th>
-                            <th scope="col" class="fw-semibold py-3 text-danger">Mã NV - MNV (*)</th>
+                            <th scope="col" class="fw-semibold py-3 text-danger">Mã NV - MNV - Mã CB (*)</th>
                             <th scope="col" class="fw-semibold py-3 text-start text-danger">Họ Tên - họ và tên (*)</th>
                             <th scope="col" class="fw-semibold py-3">Phòng - phòng ban - phòng/ban</th>
                             <th scope="col" class="fw-semibold py-3 text-danger">Tổng Thu Nhập Chịu Thuế (*)</th>
@@ -73,7 +73,6 @@
         <div class="card-body p-4">
             <div class="row g-4">
 
-                <!-- Lỗi 1 -->
                 <div class="col-12 col-md-6">
                     <div class="card h-100 border shadow-sm" style="border-color: #f0c0c0 !important; border-radius: 10px; overflow: hidden;">
                         <img src="~/img/error-system.png"
@@ -89,7 +88,6 @@
                     </div>
                 </div>
 
-                <!-- Lỗi 2 -->
                 <div class="col-12 col-md-6">
                     <div class="card h-100 border shadow-sm" style="border-color: #f0c0c0 !important; border-radius: 10px; overflow: hidden;">
                         <img src="~/img/error-column.png"
@@ -100,6 +98,21 @@
                             <h6 class="fw-semibold mb-2" style="color: #1a3c5e;">File không có cột mã nhân viên</h6>
                             <p class="text-muted mb-0" style="font-size: 0.85rem; line-height: 1.6;">
                                 Kiểm tra lại file bị lỗi xem có cột mã nhân viên hay không. Các cột được chấp nhận đã liệt kê ở trên. Sửa lại file rồi upload lên lại
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <div class="card h-100 border shadow-sm" style="border-color: #f0c0c0 !important; border-radius: 10px; overflow: hidden;">
+                        <img src="~/img/error-duplicate-name.jpg"
+                             class="card-img-top" alt="Lỗi 2"
+                             style="height: 220px; object-fit: cover;">
+                        <div class="card-body">
+                            <span class="badge mb-2" style="background-color: #fee2e2; color: #b91c1c; font-size: 0.75rem;">Lỗi #003</span>
+                            <h6 class="fw-semibold mb-2" style="color: #1a3c5e;">File có tên nhân viên bị trùng</h6>
+                            <p class="text-muted mb-0" style="font-size: 0.85rem; line-height: 1.6;">
+                                Lỗi này xảy ra khi 1 nhân viên có 2 Mã NV khác nhau nhưng cùng tên. Kiểm tra lại tất cả các file trong tháng đó
                             </p>
                         </div>
                     </div>

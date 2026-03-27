@@ -326,11 +326,19 @@ namespace SalaryHub.Services
 
                 rows.Add(totalRow);
 
+                var duplicateNames = rows
+                    .Where(r => r.FullName != "TOTAL")
+                    .GroupBy(r => r.FullName)
+                    .Where(g => g.Count() > 1)
+                    .Select(g => g.Key)
+                    .ToList();
+
                 var vm = new SalaryReportViewModel
                 {
                     IncomeTitles = incomeTitles,
                     PitTitles = incomeTitles,
-                    Rows = rows
+                    Rows = rows,
+                    DuplicateName = duplicateNames.Any() ? string.Join(", ", duplicateNames) : null
                 };
 
                 return vm;
@@ -356,9 +364,144 @@ namespace SalaryHub.Services
             }
         }
 
+        public async Task<SalaryReportViewModel> GetCumulativeReport(List<int> months, int year)
+        {
+            try
+            {
+                var records = await _context.SalaryRecords
+                    .Where(x => x.Year == year && months.Contains(x.Month))
+                    .Include(x => x.User)
+                    .ToListAsync();
+
+                var monthlyRecords = records.Where(x => x.IsMonthlyReport).ToList();
+                var onceTimeRecords = records.Where(x => !x.IsMonthlyReport).ToList();
+
+                var monthlyTitles = monthlyRecords
+                    .Select(x => x.Title)
+                    .Distinct()
+                    .ToList();
+
+                var onceTimeTitles = onceTimeRecords
+                    .Select(x => x.Title)
+                    .Distinct()
+                    .ToList();
+
+                var sortedMonths = months.OrderBy(m => m).ToList();
+                var monthsDisplay = string.Join(", ", sortedMonths.Select(m => $"T{m:D2}"));
+                var monthRange = $"{monthsDisplay}/{year}";
+
+                var cumulativeTitles = new List<string>();
+                if (monthlyTitles.Any())
+                {
+                    var baseTitles = monthlyTitles.Select(t => t.Split(" - ")[0]).Distinct();
+                    cumulativeTitles.Add($"Lũy kế {string.Join(", ", baseTitles)} ({monthRange})");
+                }
+                cumulativeTitles.AddRange(onceTimeTitles);
+
+                var rows = records
+                    .GroupBy(x => x.User)
+                    .Select(g =>
+                    {
+                        var userRow = new UserSalaryRow
+                        {
+                            EmployeeCode = g.Key.EmployeeCode,
+                            FullName = g.Key.FullName,
+                            Department = g.Key.Department,
+                            Incomes = new Dictionary<string, decimal>(),
+                            Pits = new Dictionary<string, decimal>(),
+                            Bhxh = 0
+                        };
+
+                        var userMonthlyRecords = g.Where(x => x.IsMonthlyReport).ToList();
+                        if (userMonthlyRecords.Any())
+                        {
+                            var cumulativeKey = cumulativeTitles.First(t => t.StartsWith("Lũy kế"));
+                            userRow.Incomes[cumulativeKey] = userMonthlyRecords.Sum(x => x.TaxableIncome);
+                            userRow.Pits[cumulativeKey] = userMonthlyRecords.Sum(x => x.Pit ?? 0);
+                        }
+
+                        foreach (var rec in g.Where(x => !x.IsMonthlyReport))
+                        {
+                            if (!userRow.Incomes.ContainsKey(rec.Title))
+                            {
+                                userRow.Incomes[rec.Title] = 0;
+                                userRow.Pits[rec.Title] = 0;
+                            }
+                            userRow.Incomes[rec.Title] += rec.TaxableIncome;
+                            userRow.Pits[rec.Title] += rec.Pit ?? 0;
+                        }
+
+                        userRow.Bhxh = g.Sum(x => x.Bhxh ?? 0);
+                        return userRow;
+                    })
+                    .OrderBy(x => x.Department)
+                    .ToList();
+
+                var totalRow = new UserSalaryRow
+                {
+                    EmployeeCode = "",
+                    FullName = "TOTAL",
+                    Department = "",
+                    Incomes = new Dictionary<string, decimal>(),
+                    Pits = new Dictionary<string, decimal>(),
+                    Bhxh = 0
+                };
+
+                if (monthlyRecords.Any())
+                {
+                    var cumulativeKey = cumulativeTitles.First(t => t.StartsWith("Lũy kế"));
+                    totalRow.Incomes[cumulativeKey] = monthlyRecords.Sum(x => x.TaxableIncome);
+                    totalRow.Pits[cumulativeKey] = monthlyRecords.Sum(x => x.Pit ?? 0);
+                }
+
+                foreach (var title in onceTimeTitles)
+                {
+                    totalRow.Incomes[title] = onceTimeRecords.Where(x => x.Title == title).Sum(x => x.TaxableIncome);
+                    totalRow.Pits[title] = onceTimeRecords.Where(x => x.Title == title).Sum(x => x.Pit ?? 0);
+                }
+
+                totalRow.Bhxh = records.Sum(x => x.Bhxh ?? 0);
+                rows.Add(totalRow);
+
+                var duplicateNames = rows
+                    .Where(r => r.FullName != "TOTAL")
+                    .GroupBy(r => r.FullName)
+                    .Where(g => g.Count() > 1)
+                    .Select(g => g.Key)
+                    .ToList();
+
+                return new SalaryReportViewModel
+                {
+                    IncomeTitles = cumulativeTitles,
+                    PitTitles = cumulativeTitles,
+                    Rows = rows,
+                    DuplicateName = duplicateNames.Any() ? string.Join(", ", duplicateNames) : null
+                };
+            }
+            catch (Exception ex)
+            {
+                _context.ChangeTracker.Clear();
+                using var logTransaction = _context.Database.BeginTransaction();
+
+                var systemLog = new SystemLog
+                {
+                    ErrorMessage = ex.Message,
+                    ErrorInnerMessage = ex.InnerException?.Message,
+                    StackTrace = ex.StackTrace,
+                    CreatedDate = DateTime.UtcNow
+                };
+
+                _context.SystemLogs.Add(systemLog);
+                _context.SaveChanges();
+                logTransaction.Commit();
+
+                return new SalaryReportViewModel();
+            }
+        }
+
         private int FindHeaderRow(IXLWorksheet ws)
         {
-            var allowList = new HashSet<string> { "mã nv", "mnv" };
+            var allowList = new HashSet<string> { "mã nv", "mnv", "mã cb" };
 
             foreach (var row in ws.RowsUsed())
             {
@@ -392,6 +535,7 @@ namespace SalaryHub.Services
                         map.No = cell.Address.ColumnNumber;
                         break;
 
+                    case "mã cb":
                     case "mnv":
                     case "mã nv":
                         map.EmpCode = cell.Address.ColumnNumber;

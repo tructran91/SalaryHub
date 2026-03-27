@@ -7,6 +7,13 @@
 }
 else
 {
+    @if (!string.IsNullOrEmpty(Model.DuplicateName))
+    {
+        <div class="alert alert-danger my-4" role="alert">
+            Danh sách nhân viên bị trùng họ tên: <strong>@Model.DuplicateName</strong>
+        </div>
+    }
+
     <div style="overflow-x: auto; width: 100%;">
         <table class="table table-bordered table-striped table-hover table-sm text-center mb-0">
             <thead class="table-light">

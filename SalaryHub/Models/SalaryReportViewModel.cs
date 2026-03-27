@@ -3,7 +3,10 @@
     public class SalaryReportViewModel
     {
         public List<string> IncomeTitles { get; set; } = new();
+
         public List<string> PitTitles { get; set; } = new();
+
+        public string? DuplicateName { get; set; }
 
         public List<UserSalaryRow> Rows { get; set; } = new();
     }

@@ -30,6 +30,14 @@ namespace SalaryHub.Controllers
             return View();
         }
 
+        [HttpGet]
+        public async Task<ActionResult> GetCumulativeReport(List<int> months, int year)
+        {
+            var data = await _excelService.GetCumulativeReport(months, year);
+
+            return PartialView("_PayrollReportRows", data);
+        }
+
         public IActionResult Guideline()
         {
             return View();
@@ -135,7 +143,7 @@ namespace SalaryHub.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> ExportExcel(int month, int year)
+        public async Task<IActionResult> ExportExcelMonthly(int month, int year)
         {
             var vm = await _excelService.GetMonthlySalaryReport(month, year);
 
@@ -304,6 +312,160 @@ namespace SalaryHub.Controllers
             workbook.SaveAs(stream);
 
             string fileName = $"Tong hop thue TNCN Thang {month:D2}_{year}.xlsx";
+            return File(stream.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportCumulativeExcel(List<int> months, int year)
+        {
+            var vm = await _excelService.GetCumulativeReport(months, year);
+
+            using var workbook = new XLWorkbook();
+            var ws = workbook.Worksheets.Add("Báo cáo lũy kế");
+
+            int totalCols = 4 + vm.IncomeTitles.Count + 1 + vm.PitTitles.Count + 3;
+
+            var sortedMonths = months.OrderBy(m => m).ToList();
+            var monthsDisplay = string.Join(", ", sortedMonths.Select(m => $"T{m:D2}"));
+
+            ws.Range(4, 1, 4, totalCols).Merge();
+            ws.Cell(4, 1).Value = $"BÁO CÁO LŨY KẾ THUẾ TNCN ({monthsDisplay}) NĂM {year}";
+            ws.Cell(4, 1).Style.Font.Bold = true;
+            ws.Cell(4, 1).Style.Font.FontSize = 16;
+            ws.Cell(4, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Cell(4, 1).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            ws.Row(4).Height = 30;
+
+            int col = 1;
+
+            foreach (var label in new[] { "STT", "Mã NV", "HỌ VÀ TÊN", "Phòng ban" })
+            {
+                ws.Range(6, col, 7, col).Merge();
+                ws.Cell(6, col).Value = label;
+                StyleGroupCell(ws.Cell(6, col), XLColor.FromHtml("#F4CCCC"));
+                col++;
+            }
+
+            int incomeStartCol = col;
+            int incomeColCount = vm.IncomeTitles.Count + 1;
+            ws.Range(6, incomeStartCol, 6, incomeStartCol + incomeColCount - 1).Merge();
+            ws.Cell(6, incomeStartCol).Value = $"THU NHẬP ({monthsDisplay})";
+            StyleGroupHeader(ws.Cell(6, incomeStartCol), XLColor.FromHtml("#D9EAD3"));
+
+            int pitStartCol = incomeStartCol + incomeColCount;
+            int pitColCount = vm.PitTitles.Count;
+            ws.Range(6, pitStartCol, 6, pitStartCol + pitColCount - 1).Merge();
+            ws.Cell(6, pitStartCol).Value = $"THUẾ TNCN ({monthsDisplay})";
+            StyleGroupHeader(ws.Cell(6, pitStartCol), XLColor.FromHtml("#D9EAD3"));
+
+            int afterPitCol = pitStartCol + pitColCount;
+            foreach (var label in new[] { $"BHXH\n({monthsDisplay})", $"Thuế TNCN\n({monthsDisplay}) đã\ntạm trích", $"Thuế TNCN\nphải nộp\n({monthsDisplay})" })
+            {
+                ws.Range(6, afterPitCol, 7, afterPitCol).Merge();
+                ws.Cell(6, afterPitCol).Value = label;
+                StyleGroupCell(ws.Cell(6, afterPitCol), XLColor.FromHtml("#F4CCCC"));
+                afterPitCol++;
+            }
+
+            col = incomeStartCol;
+            foreach (var title in vm.IncomeTitles)
+            {
+                ws.Cell(7, col).Value = title;
+                StyleSubHeader(ws.Cell(7, col));
+                col++;
+            }
+            ws.Cell(7, col).Value = "Tổng thu nhập\nchịu thuế";
+            StyleSubHeader(ws.Cell(7, col));
+            col++;
+
+            foreach (var title in vm.PitTitles)
+            {
+                ws.Cell(7, col).Value = title;
+                StyleSubHeader(ws.Cell(7, col));
+                col++;
+            }
+
+            ws.Range(6, 1, 7, totalCols).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            ws.Range(6, 1, 7, totalCols).Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+            ws.Range(6, 1, 7, totalCols).Style.Alignment.WrapText = true;
+            ws.Range(6, 1, 7, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Range(6, 1, 7, totalCols).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            ws.Row(6).Height = 20;
+            ws.Row(7).Height = 60;
+
+            for (int i = 0; i < vm.Rows.Count; i++)
+            {
+                var row = vm.Rows[i];
+                bool isTotal = row.FullName == "TOTAL";
+                int r = i + 8;
+                col = 1;
+
+                decimal totalIncome = 0;
+                decimal totalPit = 0;
+
+                ws.Cell(r, col++).Value = isTotal ? "" : (i + 1).ToString();
+                ws.Cell(r, col++).Value = row.EmployeeCode;
+                ws.Cell(r, col++).Value = row.FullName;
+                ws.Cell(r, col++).Value = row.Department;
+
+                foreach (var title in vm.IncomeTitles)
+                {
+                    decimal value = row.Incomes.ContainsKey(title) ? row.Incomes[title] : 0;
+                    totalIncome += value;
+                    ws.Cell(r, col++).Value = value;
+                }
+                ws.Cell(r, col++).Value = totalIncome;
+
+                foreach (var title in vm.PitTitles)
+                {
+                    decimal value = row.Pits.ContainsKey(title) ? row.Pits[title] : 0;
+                    totalPit += value;
+                    ws.Cell(r, col++).Value = value;
+                }
+
+                ws.Cell(r, col++).Value = row.Bhxh;
+                ws.Cell(r, col++).Value = totalPit;
+                ws.Cell(r, col).Value = totalPit;
+
+                var dataRow = ws.Range(r, 1, r, totalCols);
+                dataRow.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                dataRow.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+                ws.Range(r, 1, r, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Range(r, 2, r, 2).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Range(r, 4, r, 4).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Range(r, incomeStartCol, r, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+
+                if (isTotal)
+                {
+                    dataRow.Style.Font.Bold = true;
+                    dataRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#FFF3CD");
+                }
+            }
+
+            int dataRowCount = vm.Rows.Count + 8;
+            ws.Range(8, incomeStartCol, dataRowCount, totalCols)
+              .Style.NumberFormat.Format = "#,##0";
+            ws.Range(8, incomeStartCol, dataRowCount, totalCols)
+              .Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+
+            ws.Column(1).Width = 6;
+            ws.Column(2).Width = 10;
+            ws.Column(3).Width = 25;
+            ws.Column(3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
+            ws.Column(4).Width = 20;
+
+            for (int c = incomeStartCol; c <= totalCols; c++)
+            {
+                ws.Column(c).Width = 15;
+            }
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+
+            string fileName = $"Bao cao luy ke Thue TNCN ({monthsDisplay})_{year}.xlsx";
             return File(stream.ToArray(),
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 fileName);
