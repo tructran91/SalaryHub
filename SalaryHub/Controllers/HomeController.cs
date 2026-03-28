@@ -1,5 +1,6 @@
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
+using SalaryHub.Helpers;
 using SalaryHub.Models;
 using SalaryHub.Services;
 using System.Diagnostics;
@@ -204,18 +205,22 @@ namespace SalaryHub.Controllers
             col = incomeStartCol;
             foreach (var title in vm.IncomeTitles)
             {
-                ws.Cell(7, col).Value = title;
-                StyleSubHeader(ws.Cell(7, col));
+                var displayTitle = TitleGroupHelper.IsGroupSummary(title) ? "Tổng nhóm" : title;
+                ws.Cell(7, col).Value = displayTitle;
+                StyleSubHeader(ws.Cell(7, col), TitleGroupHelper.GetExcelColor(title));
+                if (TitleGroupHelper.IsGroupSummary(title)) ws.Cell(7, col).Style.Font.Italic = true;
                 col++;
             }
-            ws.Cell(7, col).Value = "Tổng thu nhập\nchịu thuế";
+            ws.Cell(7, col).Value = $"Tổng thu nhập\nchịu thuế\nT{month:D2}/{year}";
             StyleSubHeader(ws.Cell(7, col));
             col++;
 
             foreach (var title in vm.PitTitles)
             {
-                ws.Cell(7, col).Value = title;
-                StyleSubHeader(ws.Cell(7, col));
+                var displayTitle = TitleGroupHelper.IsGroupSummary(title) ? "Tổng nhóm" : title;
+                ws.Cell(7, col).Value = displayTitle;
+                StyleSubHeader(ws.Cell(7, col), TitleGroupHelper.GetExcelColor(title));
+                if (TitleGroupHelper.IsGroupSummary(title)) ws.Cell(7, col).Style.Font.Italic = true;
                 col++;
             }
 
@@ -247,16 +252,34 @@ namespace SalaryHub.Controllers
                 foreach (var title in vm.IncomeTitles)
                 {
                     decimal value = row.Incomes.ContainsKey(title) ? row.Incomes[title] : 0;
-                    totalIncome += value;
-                    ws.Cell(r, col++).Value = value;
+                    if (!TitleGroupHelper.ShouldExcludeFromTotal(title))
+                    {
+                        totalIncome += value;
+                    }
+                    var dataCell = ws.Cell(r, col++);
+                    dataCell.Value = value;
+                    if (!isTotal)
+                    {
+                        dataCell.Style.Fill.BackgroundColor = XLColor.FromHtml(TitleGroupHelper.GetExcelColor(title));
+                        if (TitleGroupHelper.IsGroupSummary(title)) dataCell.Style.Font.Bold = true;
+                    }
                 }
                 ws.Cell(r, col++).Value = totalIncome;
 
                 foreach (var title in vm.PitTitles)
                 {
                     decimal value = row.Pits.ContainsKey(title) ? row.Pits[title] : 0;
-                    totalPit += value;
-                    ws.Cell(r, col++).Value = value;
+                    if (!TitleGroupHelper.ShouldExcludeFromTotal(title))
+                    {
+                        totalPit += value;
+                    }
+                    var dataCell = ws.Cell(r, col++);
+                    dataCell.Value = value;
+                    if (!isTotal)
+                    {
+                        dataCell.Style.Fill.BackgroundColor = XLColor.FromHtml(TitleGroupHelper.GetExcelColor(title));
+                        if (TitleGroupHelper.IsGroupSummary(title)) dataCell.Style.Font.Bold = true;
+                    }
                 }
 
                 ws.Cell(r, col++).Value = row.Bhxh;
@@ -372,18 +395,22 @@ namespace SalaryHub.Controllers
             col = incomeStartCol;
             foreach (var title in vm.IncomeTitles)
             {
-                ws.Cell(7, col).Value = title;
-                StyleSubHeader(ws.Cell(7, col));
+                var displayTitle = TitleGroupHelper.IsGroupSummary(title) ? "Tổng nhóm" : title;
+                ws.Cell(7, col).Value = displayTitle;
+                StyleSubHeader(ws.Cell(7, col), TitleGroupHelper.GetExcelColor(title));
+                if (TitleGroupHelper.IsGroupSummary(title)) ws.Cell(7, col).Style.Font.Italic = true;
                 col++;
             }
-            ws.Cell(7, col).Value = "Tổng thu nhập\nchịu thuế";
+            ws.Cell(7, col).Value = $"Tổng thu nhập\nchịu thuế\n({monthsDisplay}/{year})";
             StyleSubHeader(ws.Cell(7, col));
             col++;
 
             foreach (var title in vm.PitTitles)
             {
-                ws.Cell(7, col).Value = title;
-                StyleSubHeader(ws.Cell(7, col));
+                var displayTitle = TitleGroupHelper.IsGroupSummary(title) ? "Tổng nhóm" : title;
+                ws.Cell(7, col).Value = displayTitle;
+                StyleSubHeader(ws.Cell(7, col), TitleGroupHelper.GetExcelColor(title));
+                if (TitleGroupHelper.IsGroupSummary(title)) ws.Cell(7, col).Style.Font.Italic = true;
                 col++;
             }
 
@@ -413,16 +440,34 @@ namespace SalaryHub.Controllers
                 foreach (var title in vm.IncomeTitles)
                 {
                     decimal value = row.Incomes.ContainsKey(title) ? row.Incomes[title] : 0;
-                    totalIncome += value;
-                    ws.Cell(r, col++).Value = value;
+                    if (!TitleGroupHelper.ShouldExcludeFromTotal(title))
+                    {
+                        totalIncome += value;
+                    }
+                    var dataCell = ws.Cell(r, col++);
+                    dataCell.Value = value;
+                    if (!isTotal)
+                    {
+                        dataCell.Style.Fill.BackgroundColor = XLColor.FromHtml(TitleGroupHelper.GetExcelColor(title));
+                        if (TitleGroupHelper.IsGroupSummary(title)) dataCell.Style.Font.Bold = true;
+                    }
                 }
                 ws.Cell(r, col++).Value = totalIncome;
 
                 foreach (var title in vm.PitTitles)
                 {
                     decimal value = row.Pits.ContainsKey(title) ? row.Pits[title] : 0;
-                    totalPit += value;
-                    ws.Cell(r, col++).Value = value;
+                    if (!TitleGroupHelper.ShouldExcludeFromTotal(title))
+                    {
+                        totalPit += value;
+                    }
+                    var dataCell = ws.Cell(r, col++);
+                    dataCell.Value = value;
+                    if (!isTotal)
+                    {
+                        dataCell.Style.Fill.BackgroundColor = XLColor.FromHtml(TitleGroupHelper.GetExcelColor(title));
+                        if (TitleGroupHelper.IsGroupSummary(title)) dataCell.Style.Font.Bold = true;
+                    }
                 }
 
                 ws.Cell(r, col++).Value = row.Bhxh;
@@ -489,11 +534,11 @@ namespace SalaryHub.Controllers
             cell.Style.Alignment.WrapText = true;
         }
 
-        private void StyleSubHeader(IXLCell cell)
+        private void StyleSubHeader(IXLCell cell, string hexColor = "#D9EAD3")
         {
             cell.Style.Font.Bold = true;
             cell.Style.Font.FontColor = XLColor.Red;
-            cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#D9EAD3");
+            cell.Style.Fill.BackgroundColor = XLColor.FromHtml(hexColor);
             cell.Style.Alignment.WrapText = true;
             cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;

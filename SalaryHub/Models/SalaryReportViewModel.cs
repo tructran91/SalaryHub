@@ -8,6 +8,11 @@
 
         public string? DuplicateName { get; set; }
 
+        /// <summary>
+        /// Mapping title -> màu CSS hex (vd: "#D9EAD3")
+        /// </summary>
+        public Dictionary<string, string> TitleColorMap { get; set; } = new();
+
         public List<UserSalaryRow> Rows { get; set; } = new();
     }
 

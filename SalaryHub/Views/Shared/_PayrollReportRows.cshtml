@@ -15,7 +15,7 @@ else
     }
 
     <div style="overflow-x: auto; width: 100%;">
-        <table class="table table-bordered table-striped table-hover table-sm text-center mb-0">
+        <table class="table table-bordered table-sm text-center mb-0">
             <thead class="table-light">
                 <tr>
                     <th rowspan="2" class="table-warning align-middle">STT</th>
@@ -31,12 +31,18 @@ else
                 <tr>
                     @foreach (var title in Model.IncomeTitles)
                     {
-                        <th class="table-info">@title</th>
+                        var color = Model.TitleColorMap.ContainsKey(title) ? Model.TitleColorMap[title] : "#D9D2E9";
+                        var isSummary = TitleGroupHelper.IsGroupSummary(title);
+                        var displayTitle = isSummary ? "Tổng nhóm" : title;
+                        <th style="background-color: @color; font-weight: bold; @(isSummary ? "font-style: italic;" : "")">@displayTitle</th>
                     }
                     <th class="table-info">Tổng thu nhập</th>
                     @foreach (var title in Model.PitTitles)
                     {
-                        <th class="table-info">@title</th>
+                        var color = Model.TitleColorMap.ContainsKey(title) ? Model.TitleColorMap[title] : "#D9D2E9";
+                        var isSummary = TitleGroupHelper.IsGroupSummary(title);
+                        var displayTitle = isSummary ? "Tổng nhóm" : title;
+                        <th style="background-color: @color; font-weight: bold; @(isSummary ? "font-style: italic;" : "")">@displayTitle</th>
                     }
                 </tr>
             </thead>
@@ -55,15 +61,25 @@ else
                         @foreach (var title in Model.IncomeTitles)
                         {
                             decimal value = row.Incomes.ContainsKey(title) ? row.Incomes[title] : 0;
-                            totalIncome += value;
-                            <td>@value.ToString("N0")</td>
+                            if (!TitleGroupHelper.ShouldExcludeFromTotal(title))
+                            {
+                                totalIncome += value;
+                            }
+                            var bgColor = Model.TitleColorMap.ContainsKey(title) ? Model.TitleColorMap[title] : "#D9D2E9";
+                            var isSummary = TitleGroupHelper.IsGroupSummary(title);
+                            <td style="background-color: @(bgColor)22; @(isSummary ? "font-weight: bold;" : "")">@value.ToString("N0")</td>
                         }
                         <td class="fw-semibold">@totalIncome.ToString("N0")</td>
                         @foreach (var title in Model.PitTitles)
                         {
                             decimal value = row.Pits.ContainsKey(title) ? row.Pits[title] : 0;
-                            totalPit += value;
-                            <td>@value.ToString("N0")</td>
+                            if (!TitleGroupHelper.ShouldExcludeFromTotal(title))
+                            {
+                                totalPit += value;
+                            }
+                            var bgColor = Model.TitleColorMap.ContainsKey(title) ? Model.TitleColorMap[title] : "#D9D2E9";
+                            var isSummary = TitleGroupHelper.IsGroupSummary(title);
+                            <td style="background-color: @(bgColor)22; @(isSummary ? "font-weight: bold;" : "")">@value.ToString("N0")</td>
                         }
                         <td>@row.Bhxh.ToString("N0")</td>
                         <td>@totalPit.ToString("N0")</td>

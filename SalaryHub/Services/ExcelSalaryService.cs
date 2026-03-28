@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using SalaryHub.Data;
 using SalaryHub.Entities;
+using SalaryHub.Helpers;
 using SalaryHub.Models;
 
 namespace SalaryHub.Services
@@ -269,14 +270,12 @@ namespace SalaryHub.Services
                 {
                     if (record.IsMonthlyReport)
                     {
-                        record.Title = $"{record.Title} {record.Month:D2}/{record.Year}";
+                        record.Title = $"{record.Title} tháng {record.Month:D2}/{record.Year}";
                     }
                 }
 
-                var incomeTitles = records
-                    .Select(x => x.Title)
-                    .Distinct()
-                    .ToList();
+                var incomeTitles = TitleGroupHelper.SortAndInsertGroupSummaries(
+                    records.Select(x => x.Title).Distinct().ToList());
 
                 var rows = records
                     .GroupBy(x => x.User)
@@ -326,6 +325,9 @@ namespace SalaryHub.Services
 
                 rows.Add(totalRow);
 
+                // Tính giá trị cho các cột tổng nhóm
+                CalculateGroupSummaries(incomeTitles, rows);
+
                 var duplicateNames = rows
                     .Where(r => r.FullName != "TOTAL")
                     .GroupBy(r => r.FullName)
@@ -338,7 +340,8 @@ namespace SalaryHub.Services
                     IncomeTitles = incomeTitles,
                     PitTitles = incomeTitles,
                     Rows = rows,
-                    DuplicateName = duplicateNames.Any() ? string.Join(", ", duplicateNames) : null
+                    DuplicateName = duplicateNames.Any() ? string.Join(", ", duplicateNames) : null,
+                    TitleColorMap = TitleGroupHelper.BuildColorMap(incomeTitles)
                 };
 
                 return vm;
@@ -376,27 +379,31 @@ namespace SalaryHub.Services
                 var monthlyRecords = records.Where(x => x.IsMonthlyReport).ToList();
                 var onceTimeRecords = records.Where(x => !x.IsMonthlyReport).ToList();
 
-                var monthlyTitles = monthlyRecords
-                    .Select(x => x.Title)
-                    .Distinct()
-                    .ToList();
-
-                var onceTimeTitles = onceTimeRecords
-                    .Select(x => x.Title)
-                    .Distinct()
-                    .ToList();
-
                 var sortedMonths = months.OrderBy(m => m).ToList();
                 var monthsDisplay = string.Join(", ", sortedMonths.Select(m => $"T{m:D2}"));
-                var monthRange = $"{monthsDisplay}/{year}";
 
-                var cumulativeTitles = new List<string>();
-                if (monthlyTitles.Any())
+                var incomeTitles = new List<string>();
+                var pitTitles = new List<string>();
+
+                // Thêm từng cột monthly theo tháng
+                foreach (var m in sortedMonths)
                 {
-                    var baseTitles = monthlyTitles.Select(t => t.Split(" - ")[0]).Distinct();
-                    cumulativeTitles.Add($"Lũy kế {string.Join(", ", baseTitles)} ({monthRange})");
+                    var monthRecords = monthlyRecords.Where(x => x.Month == m).ToList();
+                    foreach (var baseTitle in monthRecords.Select(x => x.Title).Distinct())
+                    {
+                        var displayTitle = $"{baseTitle} tháng {m:D2}/{year}";
+                        if (!incomeTitles.Contains(displayTitle))
+                        {
+                            incomeTitles.Add(displayTitle);
+                            pitTitles.Add(displayTitle);
+                        }
+                    }
                 }
-                cumulativeTitles.AddRange(onceTimeTitles);
+
+                // Thêm once-time titles
+                var onceTimeTitles = onceTimeRecords.Select(x => x.Title).Distinct().ToList();
+                incomeTitles.AddRange(onceTimeTitles);
+                pitTitles.AddRange(onceTimeTitles);
 
                 var rows = records
                     .GroupBy(x => x.User)
@@ -412,14 +419,21 @@ namespace SalaryHub.Services
                             Bhxh = 0
                         };
 
+                        // Điền giá trị cho từng cột monthly
                         var userMonthlyRecords = g.Where(x => x.IsMonthlyReport).ToList();
-                        if (userMonthlyRecords.Any())
+                        foreach (var rec in userMonthlyRecords)
                         {
-                            var cumulativeKey = cumulativeTitles.First(t => t.StartsWith("Lũy kế"));
-                            userRow.Incomes[cumulativeKey] = userMonthlyRecords.Sum(x => x.TaxableIncome);
-                            userRow.Pits[cumulativeKey] = userMonthlyRecords.Sum(x => x.Pit ?? 0);
+                            var displayTitle = $"{rec.Title} tháng {rec.Month:D2}/{rec.Year}";
+                            if (!userRow.Incomes.ContainsKey(displayTitle))
+                            {
+                                userRow.Incomes[displayTitle] = 0;
+                                userRow.Pits[displayTitle] = 0;
+                            }
+                            userRow.Incomes[displayTitle] += rec.TaxableIncome;
+                            userRow.Pits[displayTitle] += rec.Pit ?? 0;
                         }
 
+                        // Điền once-time records
                         foreach (var rec in g.Where(x => !x.IsMonthlyReport))
                         {
                             if (!userRow.Incomes.ContainsKey(rec.Title))
@@ -447,13 +461,20 @@ namespace SalaryHub.Services
                     Bhxh = 0
                 };
 
-                if (monthlyRecords.Any())
+                // Tính total cho từng cột monthly
+                foreach (var rec in monthlyRecords)
                 {
-                    var cumulativeKey = cumulativeTitles.First(t => t.StartsWith("Lũy kế"));
-                    totalRow.Incomes[cumulativeKey] = monthlyRecords.Sum(x => x.TaxableIncome);
-                    totalRow.Pits[cumulativeKey] = monthlyRecords.Sum(x => x.Pit ?? 0);
+                    var displayTitle = $"{rec.Title} tháng {rec.Month:D2}/{rec.Year}";
+                    if (!totalRow.Incomes.ContainsKey(displayTitle))
+                    {
+                        totalRow.Incomes[displayTitle] = 0;
+                        totalRow.Pits[displayTitle] = 0;
+                    }
+                    totalRow.Incomes[displayTitle] += rec.TaxableIncome;
+                    totalRow.Pits[displayTitle] += rec.Pit ?? 0;
                 }
 
+                // Tính total cho once-time
                 foreach (var title in onceTimeTitles)
                 {
                     totalRow.Incomes[title] = onceTimeRecords.Where(x => x.Title == title).Sum(x => x.TaxableIncome);
@@ -470,12 +491,19 @@ namespace SalaryHub.Services
                     .Select(g => g.Key)
                     .ToList();
 
+                incomeTitles = TitleGroupHelper.SortAndInsertGroupSummaries(incomeTitles);
+                pitTitles = TitleGroupHelper.SortAndInsertGroupSummaries(pitTitles);
+
+                // Tính giá trị cho các cột tổng nhóm
+                CalculateGroupSummaries(incomeTitles, rows);
+
                 return new SalaryReportViewModel
                 {
-                    IncomeTitles = cumulativeTitles,
-                    PitTitles = cumulativeTitles,
+                    IncomeTitles = incomeTitles,
+                    PitTitles = pitTitles,
                     Rows = rows,
-                    DuplicateName = duplicateNames.Any() ? string.Join(", ", duplicateNames) : null
+                    DuplicateName = duplicateNames.Any() ? string.Join(", ", duplicateNames) : null,
+                    TitleColorMap = TitleGroupHelper.BuildColorMap(incomeTitles)
                 };
             }
             catch (Exception ex)
@@ -496,6 +524,34 @@ namespace SalaryHub.Services
                 logTransaction.Commit();
 
                 return new SalaryReportViewModel();
+            }
+        }
+
+        /// <summary>
+        /// Tính giá trị cho các cột tổng nhóm: cộng dồn các cột cùng nhóm
+        /// </summary>
+        private void CalculateGroupSummaries(List<string> titles, List<UserSalaryRow> rows)
+        {
+            var summaryTitles = titles.Where(TitleGroupHelper.IsGroupSummary).ToList();
+
+            foreach (var summaryTitle in summaryTitles)
+            {
+                // Lấy tên nhóm từ summary title, tìm group order tương ứng
+                var groupName = summaryTitle.Substring(TitleGroupHelper.GroupSummaryPrefix.Length);
+                int groupOrder = TitleGroupHelper.GetGroupOrderByName(groupName);
+
+                // Lấy tất cả title thuộc cùng nhóm (không phải summary)
+                var groupTitles = titles
+                    .Where(t => !TitleGroupHelper.IsGroupSummary(t) && TitleGroupHelper.GetGroupOrder(t) == groupOrder)
+                    .ToList();
+
+                foreach (var row in rows)
+                {
+                    row.Incomes[summaryTitle] = groupTitles
+                        .Sum(t => row.Incomes.ContainsKey(t) ? row.Incomes[t] : 0);
+                    row.Pits[summaryTitle] = groupTitles
+                        .Sum(t => row.Pits.ContainsKey(t) ? row.Pits[t] : 0);
+                }
             }
         }
 
@@ -580,7 +636,7 @@ namespace SalaryHub.Services
                     var text = firstCell.GetString().Trim();
 
                     if (!string.IsNullOrWhiteSpace(text))
-                        return text;
+                        return text.ToLower();
                 }
             }
 
