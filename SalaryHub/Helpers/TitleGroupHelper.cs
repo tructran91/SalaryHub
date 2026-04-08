@@ -8,12 +8,12 @@
         {
             var lower = title.ToLower();
 
-            if (lower.Contains("bảng tính thu nhập"))
-                return 1;
-            if (lower.Contains("kinh doanh") && !lower.Contains("kinh doanh bancas"))
-                return 2;
             if (lower.Contains("kinh doanh bancas"))
                 return 3;
+            if (lower.Contains("kinh doanh"))
+                return 2;
+            if (lower.Contains("thu nhập"))
+                return 1;
 
             return 4;
         }
@@ -22,7 +22,7 @@
         {
             return group switch
             {
-                1 => "bảng tính thu nhập",
+                1 => "thu nhập",
                 2 => "kinh doanh",
                 3 => "kinh doanh bancas",
                 _ => "khác"
@@ -111,7 +111,7 @@
         {
             return groupName switch
             {
-                "bảng tính thu nhập" => 1,
+                "thu nhập" => 1,
                 "kinh doanh" => 2,
                 "kinh doanh bancas" => 3,
                 _ => 4

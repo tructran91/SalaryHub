@@ -49,6 +49,13 @@ namespace SalaryHub.Services
             // tìm dòng nhân viên đầu tiên
             while (row <= lastRow)
             {
+                // Bỏ qua row ẩn
+                if (ws.Row(row).IsHidden)
+                {
+                    row++;
+                    continue;
+                }
+
                 var empCode = ws.Cell(row, columnMap.EmpCode).GetString().Trim();
 
                 if (int.TryParse(empCode, out _))
@@ -86,6 +93,13 @@ namespace SalaryHub.Services
             {
                 while (row <= lastRow)
                 {
+                    // Bỏ qua row ẩn
+                    if (ws.Row(row).IsHidden)
+                    {
+                        row++;
+                        continue;
+                    }
+
                     var no = ws.Cell(row, columnMap.No).GetString().Trim();
                     var empCode = ws.Cell(row, columnMap.EmpCode).GetString().Trim();
 
@@ -561,8 +575,16 @@ namespace SalaryHub.Services
 
             foreach (var row in ws.RowsUsed())
             {
+                // Bỏ qua row ẩn
+                if (row.IsHidden)
+                    continue;
+
                 foreach (var cell in row.CellsUsed())
                 {
+                    // Bỏ qua column ẩn
+                    if (ws.Column(cell.Address.ColumnNumber).IsHidden)
+                        continue;
+
                     var value = cell.GetString().Trim().ToLower();
                     if (allowList.Contains(value))
                     {
@@ -582,6 +604,10 @@ namespace SalaryHub.Services
 
             foreach (var cell in header.CellsUsed())
             {
+                // Bỏ qua column ẩn
+                if (ws.Column(cell.Address.ColumnNumber).IsHidden)
+                    continue;
+
                 var text = cell.GetString().ToLower().Trim();
 
                 switch (text)
@@ -629,6 +655,10 @@ namespace SalaryHub.Services
         {
             for (int row = 1; row < headerRow; row++)
             {
+                // Bỏ qua row ẩn
+                if (ws.Row(row).IsHidden)
+                    continue;
+
                 var firstCell = ws.Row(row).FirstCellUsed();
 
                 if (firstCell != null)
