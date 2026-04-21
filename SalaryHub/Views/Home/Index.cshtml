@@ -34,20 +34,11 @@
                 </select>
             </div>
 
-            <div class="col-md-3">
-                <label class="form-label">Chọn file Excel lũy kế</label>
+            <div class="col-md-6">
+                <label class="form-label">Chọn file Excel</label>
                 <input type="file"
                        class="form-control"
-                       id="excelFilesMonthly"
-                       accept=".xlsx,.xls"
-                       multiple>
-            </div>
-
-            <div class="col-md-3">
-                <label class="form-label">Chọn file Excel phát sinh mới</label>
-                <input type="file"
-                       class="form-control"
-                       id="excelFilesOnceTime"
+                       id="excelFiles"
                        accept=".xlsx,.xls"
                        multiple>
             </div>
@@ -95,8 +86,7 @@
             const $month = $("#month");
             const $year = $("#year");
             const $submitBtn = $("#submitBtn");
-            const $excelFilesMonthly = $("#excelFilesMonthly");
-            const $excelFilesOnceTime = $("#excelFilesOnceTime");
+            const $excelFiles = $("#excelFiles");
             const $uploadStatus = $("#uploadStatus");
             const $warningArea = $("#warningArea");
             const $warningTable = $("#warningTable");
@@ -114,10 +104,9 @@
 
             // Upload files
             $submitBtn.on("click", async function () {
-                const monthlyFiles = $excelFilesMonthly[0].files;
-                const onceTimeFiles = $excelFilesOnceTime[0].files;
+                const files = $excelFiles[0].files;
 
-                if (monthlyFiles.length === 0 && onceTimeFiles.length === 0) {
+                if (files.length === 0) {
                     alert("Vui lòng chọn ít nhất 1 file Excel");
                     return;
                 }
@@ -126,14 +115,8 @@
                 formData.append("month", $month.val());
                 formData.append("year", $year.val());
 
-                // Add monthly files with isMonthlyReport = true
-                $.each(monthlyFiles, function (i, file) {
-                    formData.append("monthlyFiles", file);
-                });
-
-                // Add once-time files with isMonthlyReport = false
-                $.each(onceTimeFiles, function (i, file) {
-                    formData.append("onceTimeFiles", file);
+                $.each(files, function (i, file) {
+                    formData.append("files", file);
                 });
 
                 $uploadStatus.text("Đang xử lý...");

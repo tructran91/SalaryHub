@@ -47,31 +47,13 @@ namespace SalaryHub.Controllers
         [HttpPost]
         [RequestSizeLimit(524288000)]
         [RequestFormLimits(MultipartBodyLengthLimit = 524288000)]
-        public IActionResult Upload(int month, int year, List<IFormFile> monthlyFiles, List<IFormFile> onceTimeFiles)
+        public IActionResult Upload(int month, int year, List<IFormFile> files)
         {
             var errors = new List<object>();
             var warnings = new List<object>();
             int totalInserted = 0;
 
-            var allFiles = new List<(IFormFile file, bool isMonthly)>();
-
-            if (monthlyFiles != null && monthlyFiles.Count > 0)
-            {
-                foreach (var file in monthlyFiles)
-                {
-                    allFiles.Add((file, true));
-                }
-            }
-
-            if (onceTimeFiles != null && onceTimeFiles.Count > 0)
-            {
-                foreach (var file in onceTimeFiles)
-                {
-                    allFiles.Add((file, false));
-                }
-            }
-
-            if (allFiles.Count == 0)
+            if (files == null || files.Count == 0)
             {
                 errors.Add(new
                 {
@@ -86,11 +68,11 @@ namespace SalaryHub.Controllers
                 });
             }
 
-            foreach (var (file, isMonthly) in allFiles)
+            foreach (var file in files)
             {
                 using var stream = file.OpenReadStream();
 
-                var result = _excelService.Import(stream, month, year, isMonthly);
+                var result = _excelService.Import(stream, month, year);
 
                 if (!result.Success)
                 {

@@ -18,8 +18,6 @@
 
         public decimal? Bhxh { get; set; } // Trích BHXH
 
-        public bool IsMonthlyReport { get; set; }
-
         public DateTime? CreatedDate { get; set; }
 
         public User User { get; set; }

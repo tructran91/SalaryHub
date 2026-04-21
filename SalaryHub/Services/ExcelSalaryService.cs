@@ -16,7 +16,7 @@ namespace SalaryHub.Services
             _context = context;
         }
 
-        public ImportResult Import(Stream fileStream, int month, int year, bool isMonthlyReport = false)
+        public ImportResult Import(Stream fileStream, int month, int year)
         {
             var result = new ImportResult();
 
@@ -210,7 +210,6 @@ namespace SalaryHub.Services
                             TaxableIncome = taxableIncome,
                             Pit = pit,
                             Bhxh = bhxh,
-                            IsMonthlyReport = isMonthlyReport,
                             CreatedDate = DateTime.UtcNow
                         };
 
@@ -278,15 +277,6 @@ namespace SalaryHub.Services
                     .Where(x => x.Month == month && x.Year == year)
                     .Include(x => x.User)
                     .ToListAsync();
-
-                // Format title: nếu IsMonthlyReport = true thì thêm "MM/YYYY"
-                foreach (var record in records)
-                {
-                    if (record.IsMonthlyReport)
-                    {
-                        record.Title = $"{record.Title} tháng {record.Month:D2}/{record.Year}";
-                    }
-                }
 
                 var incomeTitles = TitleGroupHelper.SortAndInsertGroupSummaries(
                     records.Select(x => x.Title).Distinct().ToList());
@@ -390,77 +380,33 @@ namespace SalaryHub.Services
                     .Include(x => x.User)
                     .ToListAsync();
 
-                var monthlyRecords = records.Where(x => x.IsMonthlyReport).ToList();
-                var onceTimeRecords = records.Where(x => !x.IsMonthlyReport).ToList();
-
                 var sortedMonths = months.OrderBy(m => m).ToList();
                 var monthsDisplay = string.Join(", ", sortedMonths.Select(m => $"T{m:D2}"));
 
-                var incomeTitles = new List<string>();
-                var pitTitles = new List<string>();
+                var incomeTitles = records
+                    .Select(x => x.Title)
+                    .Distinct()
+                    .ToList();
 
-                // Thêm từng cột monthly theo tháng
-                foreach (var m in sortedMonths)
-                {
-                    var monthRecords = monthlyRecords.Where(x => x.Month == m).ToList();
-                    foreach (var baseTitle in monthRecords.Select(x => x.Title).Distinct())
-                    {
-                        var displayTitle = $"{baseTitle} tháng {m:D2}/{year}";
-                        if (!incomeTitles.Contains(displayTitle))
-                        {
-                            incomeTitles.Add(displayTitle);
-                            pitTitles.Add(displayTitle);
-                        }
-                    }
-                }
-
-                // Thêm once-time titles
-                var onceTimeTitles = onceTimeRecords.Select(x => x.Title).Distinct().ToList();
-                incomeTitles.AddRange(onceTimeTitles);
-                pitTitles.AddRange(onceTimeTitles);
+                var pitTitles = new List<string>(incomeTitles);
 
                 var rows = records
                     .GroupBy(x => x.User)
-                    .Select(g =>
+                    .Select(g => new UserSalaryRow
                     {
-                        var userRow = new UserSalaryRow
-                        {
-                            EmployeeCode = g.Key.EmployeeCode,
-                            FullName = g.Key.FullName,
-                            Department = g.Key.Department,
-                            Incomes = new Dictionary<string, decimal>(),
-                            Pits = new Dictionary<string, decimal>(),
-                            Bhxh = 0
-                        };
+                        EmployeeCode = g.Key.EmployeeCode,
+                        FullName = g.Key.FullName,
+                        Department = g.Key.Department,
 
-                        // Điền giá trị cho từng cột monthly
-                        var userMonthlyRecords = g.Where(x => x.IsMonthlyReport).ToList();
-                        foreach (var rec in userMonthlyRecords)
-                        {
-                            var displayTitle = $"{rec.Title} tháng {rec.Month:D2}/{rec.Year}";
-                            if (!userRow.Incomes.ContainsKey(displayTitle))
-                            {
-                                userRow.Incomes[displayTitle] = 0;
-                                userRow.Pits[displayTitle] = 0;
-                            }
-                            userRow.Incomes[displayTitle] += rec.TaxableIncome;
-                            userRow.Pits[displayTitle] += rec.Pit ?? 0;
-                        }
+                        Incomes = g
+                            .GroupBy(x => x.Title)
+                            .ToDictionary(t => t.Key, t => t.Sum(x => x.TaxableIncome)),
 
-                        // Điền once-time records
-                        foreach (var rec in g.Where(x => !x.IsMonthlyReport))
-                        {
-                            if (!userRow.Incomes.ContainsKey(rec.Title))
-                            {
-                                userRow.Incomes[rec.Title] = 0;
-                                userRow.Pits[rec.Title] = 0;
-                            }
-                            userRow.Incomes[rec.Title] += rec.TaxableIncome;
-                            userRow.Pits[rec.Title] += rec.Pit ?? 0;
-                        }
+                        Pits = g
+                            .GroupBy(x => x.Title)
+                            .ToDictionary(t => t.Key, t => t.Sum(x => x.Pit ?? 0)),
 
-                        userRow.Bhxh = g.Sum(x => x.Bhxh ?? 0);
-                        return userRow;
+                        Bhxh = g.Sum(x => x.Bhxh ?? 0)
                     })
                     .OrderBy(x => x.Department)
                     .ToList();
@@ -470,30 +416,17 @@ namespace SalaryHub.Services
                     EmployeeCode = "",
                     FullName = "TOTAL",
                     Department = "",
-                    Incomes = new Dictionary<string, decimal>(),
-                    Pits = new Dictionary<string, decimal>(),
+
+                    Incomes = records
+                        .GroupBy(x => x.Title)
+                        .ToDictionary(g => g.Key, g => g.Sum(x => x.TaxableIncome)),
+
+                    Pits = records
+                        .GroupBy(x => x.Title)
+                        .ToDictionary(g => g.Key, g => g.Sum(x => x.Pit ?? 0)),
+
                     Bhxh = 0
                 };
-
-                // Tính total cho từng cột monthly
-                foreach (var rec in monthlyRecords)
-                {
-                    var displayTitle = $"{rec.Title} tháng {rec.Month:D2}/{rec.Year}";
-                    if (!totalRow.Incomes.ContainsKey(displayTitle))
-                    {
-                        totalRow.Incomes[displayTitle] = 0;
-                        totalRow.Pits[displayTitle] = 0;
-                    }
-                    totalRow.Incomes[displayTitle] += rec.TaxableIncome;
-                    totalRow.Pits[displayTitle] += rec.Pit ?? 0;
-                }
-
-                // Tính total cho once-time
-                foreach (var title in onceTimeTitles)
-                {
-                    totalRow.Incomes[title] = onceTimeRecords.Where(x => x.Title == title).Sum(x => x.TaxableIncome);
-                    totalRow.Pits[title] = onceTimeRecords.Where(x => x.Title == title).Sum(x => x.Pit ?? 0);
-                }
 
                 totalRow.Bhxh = records.Sum(x => x.Bhxh ?? 0);
                 rows.Add(totalRow);

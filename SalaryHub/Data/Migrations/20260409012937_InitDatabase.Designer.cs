@@ -12,7 +12,7 @@ using SalaryHub.Data;
 namespace SalaryHub.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260324031654_InitDatabase")]
+    [Migration("20260409012937_InitDatabase")]
     partial class InitDatabase
     {
         /// <inheritdoc />
@@ -38,9 +38,6 @@ namespace SalaryHub.Data.Migrations
 
                     b.Property<DateTime?>("CreatedDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsMonthlyReport")
-                        .HasColumnType("bit");
 
                     b.Property<int>("Month")
                         .HasColumnType("int");

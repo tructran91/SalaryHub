@@ -36,9 +36,6 @@ namespace SalaryHub.Data.Migrations
                     b.Property<DateTime?>("CreatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsMonthlyReport")
-                        .HasColumnType("bit");
-
                     b.Property<int>("Month")
                         .HasColumnType("int");
 
